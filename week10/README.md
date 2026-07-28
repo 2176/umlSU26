@@ -20,7 +20,7 @@ Auto-create is off on purpose (you name your topics deliberately), so create the
 
 ```bash
 docker compose up -d
-for t in orders orders.dlq ci.images ci.tests ci.images.dlq; do
+for t in orders orders.dlq ci.images ci.images.dlq; do
   docker exec week10-kafka /opt/kafka/bin/kafka-topics.sh \
     --bootstrap-server localhost:9092 --create --topic "$t" \
     --partitions 1 --replication-factor 1 --if-not-exists
