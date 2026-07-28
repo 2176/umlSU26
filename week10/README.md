@@ -75,24 +75,28 @@ The Week 9 pipeline announced `ImagePushed` and stopped. Here one consumer react
   The docker and HTTP helpers are written for you. You complete the consumer loop and
   the three reliability patterns (idempotency, retry with backoff, dead-letter) plus
   commit-after-processing. See Exercise 10.
-- **`app/`** is a tiny Flask `/sum` service, the real testable image that replaces the
-  Week 9 throwaway.
+- **`calculator/`** is the Spring Boot `/sum` service (Java, listens on 8080), built
+  into the image the gate tests. Its `Dockerfile` and `Jenkinsfile` are included.
 - **`emit_imagepushed.py`** stands in for the pipeline's announce so you can drive the
   flow without Jenkins.
 
 The flow is `ImagePushed`, then deploy and test, then promote when it passes.
 
+Build and announce it with the pipeline (`calculator/Jenkinsfile`, a Pipeline from SCM
+job), or do it by hand:
+
 ```bash
-# build and push the app image to the local registry (as the pipeline would)
-docker build -t localhost:5001/calculator:1 app
+# build and push the calculator image to the local registry (as the pipeline would)
+docker build -t localhost:5001/calculator:1 calculator
 docker push localhost:5001/calculator:1
 
 python release_gate.py            # terminal 1 (after you complete it)
 python emit_imagepushed.py 1      # terminal 2, watch it deploy, test, and promote
 ```
 
-The gate deploys on host port **18080**. Change `HOST_PORT` in `release_gate.py` if
-that port is taken. It needs the local registry from Week 9 (`localhost:5001`).
+The gate maps the container's 8080 to host port **18080**. Change `HOST_PORT` in
+`release_gate.py` if that port is taken. It needs the local registry from Week 9
+(`localhost:5001`).
 
 ---
 
