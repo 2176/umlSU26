@@ -47,7 +47,7 @@ def deploy(image, version):
     try:
         subprocess.run(["docker", "pull", ref], check=True, capture_output=True)
         subprocess.run(["docker", "run", "-d", "--name", name,
-                        "-p", f"{HOST_PORT}:5000", ref], check=True, capture_output=True)
+                        "-p", f"{HOST_PORT}:8080", ref], check=True, capture_output=True)
         return True
     except subprocess.CalledProcessError as err:
         print(f"    deploy failed: {err.stderr.decode().strip()[:120]}")
