@@ -23,7 +23,7 @@ docker compose up -d
 for t in orders orders.dlq ci.images ci.tests ci.images.dlq; do
   docker exec week10-kafka /opt/kafka/bin/kafka-topics.sh \
     --bootstrap-server localhost:9092 --create --topic "$t" \
-    --partitions 1 --replication-factor 1
+    --partitions 1 --replication-factor 1 --if-not-exists
 done
 ```
 
@@ -35,20 +35,21 @@ done
 work, and shows the three patterns you write by hand this week: retry with backoff,
 idempotency (a dedup check against a `ledger.txt`), and dead-letter routing.
 
-**Redelivery + idempotency.** Send a batch, start the consumer, then kill it
-(Ctrl-C) while it is mid-order. Restart it: the uncommitted order is redelivered,
-and the idempotency check recognizes it and skips it (no double-apply).
+**Redelivery + idempotency.** `RESET=1` starts a demo over (rewind to the first
+message, clear the ledger); a plain run **resumes** from where it left off — that
+resume is what redelivers a killed order. `DEDUP=off` turns the idempotency check off.
 
 ```bash
-python producer.py          # 5 orders
-python consumer.py          # apply them; kill mid-batch, then restart
+python producer.py                     # 5 orders
+DEDUP=off RESET=1 python consumer.py    # start fresh; kill it (Ctrl-C) mid-batch...
+DEDUP=off python consumer.py            # ...resume: the redelivered order applies TWICE
 ```
 
-See the bug idempotency prevents — turn the dedup check off and the redelivered
-order is applied twice:
+Now with idempotency on (the default), the redelivered order is skipped instead:
 
 ```bash
-DEDUP=off python consumer.py
+RESET=1 python consumer.py              # start fresh; kill mid-batch...
+python consumer.py                      # ...resume: the redelivered order is skipped
 ```
 
 **Dead-letter.** Inject a poison (malformed) message; the consumer retries it with
