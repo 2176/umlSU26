@@ -67,33 +67,32 @@ docker exec week10-kafka /opt/kafka/bin/kafka-console-consumer.sh \
 
 ## Part 2 — Capstone: react to your build, reliably
 
-The Week 9 pipeline announced `ImagePushed` and stopped. Here two consumers react:
+The Week 9 pipeline announced `ImagePushed` and stopped. Here one consumer reacts.
 
-- **`tester.py`** — on `ImagePushed`, deploys the image (`docker pull` + run) and
-  acceptance-tests it (`GET /sum?a=1&b=2` must be `3`), then announces `TestsPassed`
-  or `TestsFailed`. Idempotent (skip a tag already tested), retries the check while
-  the container starts, dead-letters an image that never becomes testable.
-- **`promoter.py`** — on `TestsPassed`, tags the image `:latest` and pushes it.
-  Idempotent: never promotes the same tag twice.
-- **`app/`** — a tiny Flask `/sum` service (the real, testable image; replaces the
-  Week 9 throwaway).
-- **`emit_imagepushed.py`** — stands in for the pipeline's announce so you can drive
-  the chain without Jenkins.
+- **`release_gate.py`** (skeleton) reads each `ImagePushed` event, deploys the image
+  (`docker pull` and run), acceptance-tests it (`GET /sum?a=1&b=2` must be `3`), and
+  promotes it to `:latest` when the test passes. It does nothing when the test fails.
+  The docker and HTTP helpers are written for you. You complete the consumer loop and
+  the three reliability patterns (idempotency, retry with backoff, dead-letter) plus
+  commit-after-processing. See Exercise 10.
+- **`app/`** is a tiny Flask `/sum` service, the real testable image that replaces the
+  Week 9 throwaway.
+- **`emit_imagepushed.py`** stands in for the pipeline's announce so you can drive the
+  flow without Jenkins.
 
-The chain is **`ImagePushed` → (deploy + test) → `TestsPassed` → (promote)**.
+The flow is `ImagePushed`, then deploy and test, then promote when it passes.
 
 ```bash
-# build + push the app image to the local registry (as the pipeline would)
+# build and push the app image to the local registry (as the pipeline would)
 docker build -t localhost:5001/calculator:1 app
 docker push localhost:5001/calculator:1
 
-python tester.py      # terminal 1
-python promoter.py    # terminal 2
-python emit_imagepushed.py 1   # terminal 3 -> watch it deploy, test, pass, promote
+python release_gate.py            # terminal 1 (after you complete it)
+python emit_imagepushed.py 1      # terminal 2, watch it deploy, test, and promote
 ```
 
-The tester deploys on host port **18080**; change `HOST_PORT` in `tester.py` if that
-is taken. Requires the local registry from Week 9 (`localhost:5001`).
+The gate deploys on host port **18080**. Change `HOST_PORT` in `release_gate.py` if
+that port is taken. It needs the local registry from Week 9 (`localhost:5001`).
 
 ---
 
