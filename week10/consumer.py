@@ -9,8 +9,8 @@ The offset is committed AFTER the work, so a crash in between means the message 
 redelivered on restart — at-least-once. That redelivery is exactly why the
 idempotency check matters.
 
-  DEDUP=off python consumer.py    # turn the idempotency check OFF to SEE the
-                                  # double-apply bug that at-least-once creates
+  IDEMPOTENCY=off python consumer.py   # turn the idempotency check OFF to SEE the
+                                       # double-apply bug that at-least-once creates
   RESET=1   python consumer.py    # start the demo OVER: rewind to the first
                                   # message and clear the ledger. A plain run (no
                                   # RESET) RESUMES from the committed offset — that
@@ -27,7 +27,7 @@ TOPIC = "orders"
 DLQ = "orders.dlq"
 LEDGER = "ledger.txt"          # the persistent side effect: one line per applied order
 MAX_RETRIES = 3
-DEDUP = os.environ.get("DEDUP", "on").lower() != "off"
+IDEMPOTENCY = os.environ.get("IDEMPOTENCY", "on").lower() != "off"
 RESET = os.environ.get("RESET", "").lower() in ("1", "true", "yes")
 
 
@@ -57,7 +57,7 @@ consumer = KafkaConsumer(
     value_deserializer=lambda b: json.loads(b.decode()),
 )
 
-print(f"consumer up  (idempotency {'ON' if DEDUP else 'OFF'})  — Ctrl-C to stop")
+print(f"consumer up  (idempotency {'ON' if IDEMPOTENCY else 'OFF'})  — Ctrl-C to stop")
 
 if RESET:
     # Start the demo over: get a partition assignment, rewind to the first message,
@@ -77,7 +77,7 @@ try:
         oid = order.get("id", "?")
 
         # Pattern 2 — idempotency: already applied? skip it (but still commit past it).
-        if DEDUP and oid in seen:
+        if IDEMPOTENCY and oid in seen:
             print(f"  skip {oid}: already processed (idempotent)")
             consumer.commit()
             continue

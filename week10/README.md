@@ -37,12 +37,12 @@ idempotency (a dedup check against a `ledger.txt`), and dead-letter routing.
 
 **Redelivery + idempotency.** `RESET=1` starts a demo over (rewind to the first
 message, clear the ledger); a plain run **resumes** from where it left off — that
-resume is what redelivers a killed order. `DEDUP=off` turns the idempotency check off.
+resume is what redelivers a killed order. `IDEMPOTENCY=off` turns the idempotency check off.
 
 ```bash
 python producer.py                     # 5 orders
-DEDUP=off RESET=1 python consumer.py    # start fresh; kill it (Ctrl-C) mid-batch...
-DEDUP=off python consumer.py            # ...resume: the redelivered order applies TWICE
+IDEMPOTENCY=off RESET=1 python consumer.py    # start fresh; kill it (Ctrl-C) mid-batch...
+IDEMPOTENCY=off python consumer.py            # ...resume: the redelivered order applies TWICE
 ```
 
 Now with idempotency on (the default), the redelivered order is skipped instead:
