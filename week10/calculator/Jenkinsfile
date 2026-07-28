@@ -1,0 +1,46 @@
+// Final project pipeline. Build the real calculator, push it, and announce it.
+//
+// Configure this as a Pipeline from SCM job pointed at the course repo. When it
+// runs, Jenkins checks out the repo, builds week10/calculator into an image,
+// pushes it to the local registry, and publishes an ImagePushed event to
+// ci.images on the Week 10 broker. The Week 10 release gate then deploys the
+// image, runs the acceptance test, and promotes it to :latest if it passes.
+//
+// Prerequisites (same local setup as Week 9 and Week 10):
+//   - the local registry at localhost:5001
+//   - the Week 10 broker up (docker compose in week10), network week10_default
+//   - the kafka-python agent image built once from week9/Dockerfile:
+//       docker build -t localhost:5001/kafka-python:1 week9
+//       docker push  localhost:5001/kafka-python:1
+pipeline {
+    agent none
+    environment {
+        REGISTRY = 'localhost:5001'
+        IMAGE    = 'calculator'
+        TAG      = "${BUILD_NUMBER}"
+        TOPIC    = 'ci.images'
+        BROKER   = 'week10-kafka:29092'
+    }
+    stages {
+        stage('Build & push image') {
+            agent any
+            steps {
+                sh '''
+                    docker build -t ${REGISTRY}/${IMAGE}:${TAG} week10/calculator
+                    docker push ${REGISTRY}/${IMAGE}:${TAG}
+                '''
+            }
+        }
+        stage('Announce to Kafka') {
+            agent {
+                docker {
+                    image 'localhost:5001/kafka-python:1'
+                    args '--network week10_default'
+                }
+            }
+            steps {
+                sh 'python week10/calculator/publish_event.py'
+            }
+        }
+    }
+}
