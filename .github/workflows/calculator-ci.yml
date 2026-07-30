@@ -1,0 +1,38 @@
+name: calculator ci
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "week10/calculator/**"
+      - ".github/workflows/calculator-ci.yml"
+
+jobs:
+  build-and-test:
+    runs-on: self-hosted
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Build the calculator image
+        run: docker build -t localhost:5001/calculator:gha-${{ github.run_number }} week10/calculator
+
+      - name: Start the container
+        run: docker run -d --name calc-gha -p 18090:8080 localhost:5001/calculator:gha-${{ github.run_number }}
+
+      - name: Acceptance test
+        run: |
+          for i in $(seq 1 20); do
+            answer=$(curl -s "http://localhost:18090/sum?a=1&b=2" || true)
+            if [ "$answer" = "3" ]; then
+              echo "PASS  /sum?a=1&b=2 = $answer"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "FAIL  the service did not return 3"
+          exit 1
+
+      - name: Clean up
+        if: always()
+        run: docker rm -f calc-gha
