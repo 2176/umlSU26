@@ -18,12 +18,13 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '8'
+          java-version: "8"
 
       - name: Run unit tests
         working-directory: week10/calculator
         run: ./gradlew test
-    build-and-test:
+
+  build-and-test:
     needs: unit-test
     runs-on: ubuntu-latest
     steps:
@@ -40,7 +41,10 @@ jobs:
         run: |
           for i in $(seq 1 20); do
             answer=$(curl -s "http://localhost:18090/sum?a=1&b=2" || true)
-            if [ "$answer" = "3" ]; then echo "PASS  /sum = $answer"; exit 0; fi
+            if [ "$answer" = "3" ]; then
+              echo "PASS /sum = $answer"
+              exit 0
+            fi
             sleep 1
           done
           echo "FAIL"
