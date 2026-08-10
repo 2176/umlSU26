@@ -3,10 +3,7 @@ name: calculator ci
 on:
   workflow_dispatch:
   push:
-    paths:
-      - "week10/calculator/**"
-      - ".github/workflows/calculator-ci.yml"
-
+   
 jobs:
   unit-test:
     runs-on: ubuntu-latest
