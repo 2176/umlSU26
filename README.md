@@ -19,3 +19,4 @@ python produce.py     # publishes several events to 'orders'
 python consume.py     # in a second terminal, reads them back
 ```
 See `week8/README.md` for the full walkthrough (Kafka lab + registry lab).
+Week 11 verification: the calculator workflow now runs for repository-wide pushes.
